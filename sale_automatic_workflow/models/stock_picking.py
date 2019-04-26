@@ -16,6 +16,7 @@ class StockPicking(models.Model):
 
     @api.multi
     def validate_picking(self):
+        """Set quantities automatically and validate the pickings."""
         for picking in self:
             picking.action_assign()
             for move in picking.move_lines:
