@@ -64,7 +64,7 @@ class TestAutomaticWorkflow(TestCommon, TestAutomaticWorkflowMixin):
         self.assertEqual(line.qty_delivered, 0.0)
         # `_create_invoices` is already tested in `sale` module.
         # Make sure this addon works properly in regards to it.
-        mock_path = "odoo.addons.sale.models.sale.SaleOrder._create_invoices"
+        mock_path = "odoo.addons.sale.models.sale_order.SaleOrder._create_invoices"
         with mock.patch(mock_path) as mocked:
             sale._create_invoices()
             mocked.assert_called()

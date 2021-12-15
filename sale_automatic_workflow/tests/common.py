@@ -2,10 +2,10 @@
 # Copyright 2020 Camptocamp SA (author: Simone Orsi)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo.tests.common import SavepointCase
+from odoo.tests.common import TransactionCase
 
 
-class TestCommon(SavepointCase):
+class TestCommon(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -47,26 +47,14 @@ class TestAutomaticWorkflowMixin(object):
         # force-assigned are not transferred in the picking
         for line in order.order_line:
             if line.product_id.type == "product":
-                inventory = self.env["stock.inventory"].create(
-                    {
-                        "name": "Inventory for move %s" % line.name,
-                        "line_ids": [
-                            (
-                                0,
-                                0,
-                                {
-                                    "product_id": line.product_id.id,
-                                    "product_qty": line.product_uom_qty,
-                                    "location_id": self.env.ref(
-                                        "stock.stock_location_stock"
-                                    ).id,
-                                },
-                            )
-                        ],
-                    }
-                )
-                inventory.action_start()
-                inventory.action_validate()
+                adjust_quant = self.env['stock.quant'].with_context(inventory_mode=True).create({
+                    'product_id': line.product_id.id,
+                    'inventory_quantity': line.product_uom_qty,
+                    'location_id': self.env.ref(
+                        "stock.stock_location_stock"
+                    ).id,
+                })
+                adjust_quant.action_apply_inventory()
         return order
 
     def create_full_automatic(self, override=None):
