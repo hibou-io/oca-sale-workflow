@@ -1,9 +1,11 @@
 # License AGPL-3 - See http://www.gnu.org/licenses/agpl-3.0.html
 
-from odoo.addons.sale.tests.test_sale_order import TestSaleOrder
+import mock
+
+from odoo.tests import SavepointCase
 
 
-class TestSaleExceptionMultiRecord(TestSaleOrder):
+class TestSaleExceptionMultiRecord(SavepointCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -90,6 +92,14 @@ class TestSaleExceptionMultiRecord(TestSaleOrder):
 
         self.assertTrue(so3.state == "draft")
         self.assertTrue(exception_no_dumping in so3.exception_ids)
+        self.assertEqual(
+            so3.order_line[0].exceptions_summary,
+            (
+                "<ul>"
+                "<li>No dumping: <i>A product is sold cheaper than his cost.</i></li>"
+                "</ul>"
+            ),
+        )
 
         # test return value of detect_exception()
 
@@ -104,14 +114,12 @@ class TestSaleExceptionMultiRecord(TestSaleOrder):
         self.assertTrue(exception_no_free.id in one_two_detected)
 
         # test subset of rules
-        def new_rule_domain(self=False):
-            return [("model", "=", "sale.order"), ("id", "!=", exception_no_sol.id)]
-
-        orders._rule_domain = new_rule_domain
-        # even if the rule is excluded from the search
-        # it should still be present on the sale order
-        orders.detect_exceptions()
-        all_detected = orders.mapped("exception_ids").ids
-        self.assertTrue(exception_no_sol.id in all_detected)
-        self.assertTrue(exception_no_dumping.id in all_detected)
-        self.assertTrue(exception_no_free.id in all_detected)
+        domain = [("model", "=", "sale.order"), ("id", "!=", exception_no_sol.id)]
+        with mock.patch.object(type(orders), "_rule_domain", return_value=domain):
+            # even if the rule is excluded from the search
+            # it should still be present on the sale order
+            orders.detect_exceptions()
+            all_detected = orders.mapped("exception_ids").ids
+            self.assertTrue(exception_no_sol.id in all_detected)
+            self.assertTrue(exception_no_dumping.id in all_detected)
+            self.assertTrue(exception_no_free.id in all_detected)
