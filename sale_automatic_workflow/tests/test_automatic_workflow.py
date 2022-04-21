@@ -62,6 +62,8 @@ class TestAutomaticWorkflow(TestCommon, TestAutomaticWorkflowMixin):
         self.assertFalse(workflow.invoice_service_delivery)
         self.assertEqual(line.qty_delivered_method, "stock_move")
         self.assertEqual(line.qty_delivered, 0.0)
+        self.assertTrue(sale.delivery_state == "no")
+        self.assertFalse(sale.all_qty_delivered)
         # `_create_invoices` is already tested in `sale` module.
         # Make sure this addon works properly in regards to it.
         mock_path = "odoo.addons.sale.models.sale_order.SaleOrder._create_invoices"
@@ -76,6 +78,10 @@ class TestAutomaticWorkflow(TestCommon, TestAutomaticWorkflowMixin):
             sale._create_invoices()
             mocked.assert_called()
         self.assertEqual(line.qty_delivered, 1.0)
+        sale.action_confirm()
+        sale.action_force_delivery_state()
+        self.assertTrue(sale.delivery_state == "done")
+        self.assertTrue(sale.all_qty_delivered)
 
     def test_invoice_from_picking_with_service_product(self):
         workflow = self.create_full_automatic()
