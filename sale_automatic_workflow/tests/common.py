@@ -42,19 +42,17 @@ class TestAutomaticWorkflowMixin(object):
         if override:
             values.update(override)
         order = sale_obj.create(values)
-        # Create inventory for add stock qty to lines
-        # With this commit https://goo.gl/fRTLM3 the moves that where
-        # force-assigned are not transferred in the picking
+        # Create inventory
         for line in order.order_line:
             if line.product_id.type == "product":
-                adjust_quant = self.env['stock.quant'].with_context(inventory_mode=True).create({
-                    'product_id': line.product_id.id,
-                    'inventory_quantity': line.product_uom_qty,
-                    'location_id': self.env.ref(
-                        "stock.stock_location_stock"
-                    ).id,
-                })
-                adjust_quant.action_apply_inventory()
+                inventory = self.env["stock.quant"].create(
+                    {
+                        "product_id": line.product_id.id,
+                        "location_id": self.env.ref("stock.stock_location_stock").id,
+                        "inventory_quantity": line.product_uom_qty,
+                    }
+                )
+                inventory._apply_inventory()
         return order
 
     def create_full_automatic(self, override=None):
